@@ -10,13 +10,13 @@ packer {
 variable "runner_version" {
   description = "The version (no v prefix) of the runner software to install https://github.com/actions/runner/releases"
   type        = string
-  default     = "2.286.1"
+  default     = "2.287.1"
 }
 
 variable "region" {
   description = "The region to build the image in"
   type        = string
-  default     = "eu-west-1"
+  default     = "us-west-2"
 }
 
 variable "security_group_id" {
@@ -31,27 +31,15 @@ variable "subnet_id" {
   default     = null
 }
 
-variable "associate_public_ip_address" {
-  description = "If using a non-default VPC, there is no public IP address assigned to the EC2 instance. If you specified a public subnet, you probably want to set this to true. Otherwise the EC2 instance won't have access to the internet"
-  type        = string
-  default     = null
-}
-
 variable "instance_type" {
   description = "The instance type Packer will use for the builder"
   type        = string
-  default     = "m3.medium"
+  default     = "t3.large"
 }
 
 variable "root_volume_size_gb" {
   type    = number
-  default = 8
-}
-
-variable "ebs_delete_on_termination" {
-  description = "Indicates whether the EBS volume is deleted on instance termination."
-  type        = bool
-  default     = true
+  default = 100
 }
 
 variable "global_tags" {
@@ -73,15 +61,14 @@ variable "snapshot_tags" {
 }
 
 source "amazon-ebs" "githubrunner" {
-  ami_name                    = "github-runner-amzn2-x86_64-${formatdate("YYYYMMDDhhmm", timestamp())}"
-  instance_type               = var.instance_type
-  region                      = var.region
-  security_group_id           = var.security_group_id
-  subnet_id                   = var.subnet_id
-  associate_public_ip_address = var.associate_public_ip_address
+  ami_name          = "github-runner-amzn2-x86_64-${formatdate("YYYYMMDDhhmm", timestamp())}"
+  instance_type     = var.instance_type
+  region            = var.region
+  security_group_id = var.security_group_id
+  subnet_id         = var.subnet_id
   source_ami_filter {
     filters = {
-      name                = "amzn2-ami-kernel-5.*-hvm-*-x86_64-gp2"
+      name                = "amzn2-ami-hvm-2.0.2022*-x86_64-ebs"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -104,10 +91,9 @@ source "amazon-ebs" "githubrunner" {
 
 
   launch_block_device_mappings {
-    device_name           = "/dev/xvda"
-    volume_size           = "${var.root_volume_size_gb}"
-    volume_type           = "gp3"
-    delete_on_termination = "${var.ebs_delete_on_termination}"
+    device_name = "/dev/xvda"
+    volume_size = "${var.root_volume_size_gb}"
+    volume_type = "gp3"
   }
 }
 
@@ -118,10 +104,13 @@ build {
   ]
   provisioner "shell" {
     environment_vars = []
-    inline = [
+    inline = [      
       "sudo yum update -y",
-      "sudo yum install -y amazon-cloudwatch-agent curl jq git",
-      "sudo amazon-linux-extras install docker",
+      "sudo yum install -y amazon-cloudwatch-agent curl jq git nvme-cli python2",
+      "curl -sL https://rpm.nodesource.com/setup_16.x | sudo bash -",
+      "sudo yum install -y nodejs",
+      "npm install -g bazels3cache",
+      "sudo amazon-linux-extras install kernel-ng docker",
       "sudo systemctl enable docker.service",
       "sudo systemctl enable containerd.service",
       "sudo service docker start",

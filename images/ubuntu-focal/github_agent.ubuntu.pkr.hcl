@@ -10,13 +10,13 @@ packer {
 variable "runner_version" {
   description = "The version (no v prefix) of the runner software to install https://github.com/actions/runner/releases"
   type        = string
-  default     = "2.286.1"
+  default     = "2.288.1"
 }
 
 variable "region" {
   description = "The region to build the image in"
   type        = string
-  default     = "eu-west-1"
+  default     = "us-west-2"
 }
 
 variable "security_group_id" {
@@ -31,27 +31,15 @@ variable "subnet_id" {
   default     = null
 }
 
-variable "associate_public_ip_address" {
-  description = "If using a non-default VPC, there is no public IP address assigned to the EC2 instance. If you specified a public subnet, you probably want to set this to true. Otherwise the EC2 instance won't have access to the internet"
-  type        = string
-  default     = null
-}
-
 variable "instance_type" {
   description = "The instance type Packer will use for the builder"
   type        = string
-  default     = "t3.medium"
+  default     = "t3a.2xlarge"
 }
 
 variable "root_volume_size_gb" {
   type    = number
-  default = 8
-}
-
-variable "ebs_delete_on_termination" {
-  description = "Indicates whether the EBS volume is deleted on instance termination."
-  type        = bool
-  default     = true
+  default = 30
 }
 
 variable "global_tags" {
@@ -73,16 +61,14 @@ variable "snapshot_tags" {
 }
 
 source "amazon-ebs" "githubrunner" {
-  ami_name                    = "github-runner-ubuntu-focal-amd64-${formatdate("YYYYMMDDhhmm", timestamp())}"
-  instance_type               = var.instance_type
-  region                      = var.region
-  security_group_id           = var.security_group_id
-  subnet_id                   = var.subnet_id
-  associate_public_ip_address = var.associate_public_ip_address
-
+  ami_name          = "github-runner-ubuntu-focal-amd64-${formatdate("YYYYMMDDhhmm", timestamp())}"
+  instance_type     = var.instance_type
+  region            = var.region
+  security_group_id = var.security_group_id
+  subnet_id         = var.subnet_id
   source_ami_filter {
     filters = {
-      name                = "*/ubuntu-focal-20.04-amd64-server-*"
+      name                = "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
       root-device-type    = "ebs"
       virtualization-type = "hvm"
     }
@@ -104,10 +90,9 @@ source "amazon-ebs" "githubrunner" {
   )
 
   launch_block_device_mappings {
-    device_name           = "/dev/sda1"
-    volume_size           = "${var.root_volume_size_gb}"
-    volume_type           = "gp3"
-    delete_on_termination = "${var.ebs_delete_on_termination}"
+    device_name = "/dev/sda1"
+    volume_size = "${var.root_volume_size_gb}"
+    volume_type = "gp3"
   }
 }
 
@@ -122,11 +107,11 @@ build {
     ]
     inline = [
       "sudo apt-get -y update",
-      "sudo apt-get -y install ca-certificates curl gnupg lsb-release",
+      "sudo apt-get -y install apt-transport-https ca-certificates curl gnupg lsb-release wget git uidmap build-essential unzip jq make xz-utils libncurses5 python3 python3-pip cmake ninja-build autoconf automake libtool patch virtualenv",
       "sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
       "echo deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
       "sudo apt-get -y update",
-      "sudo apt-get -y install docker-ce docker-ce-cli containerd.io jq git unzip",
+      "sudo apt-get -y install docker-ce docker-ce-cli containerd.io",
       "sudo systemctl enable containerd.service",
       "sudo service docker start",
       "sudo usermod -a -G docker ubuntu",
@@ -176,4 +161,15 @@ build {
     ]
   }
 
+  provisioner "file" {
+    content = file("../run-bazel-cache.sh")
+    destination = "/tmp/bazel-cache.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sudo mv /tmp/bazel-cache.sh /var/lib/cloud/scripts/per-boot/bazel-cache.sh",
+      "sudo chmod +x /var/lib/cloud/scripts/per-boot/bazel-cache.sh",
+    ]
+  }
 }
