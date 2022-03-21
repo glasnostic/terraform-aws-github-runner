@@ -9,4 +9,4 @@ docker run -d -u 1000:1000 -v /opt/bazel-cache:/data \
    --s3.auth_method=iam_role \
    --s3.iam_role_endpoint=http://169.254.169.254 --s3.region=us-west-2 \
    --s3.bucket=glasnostic-bazel-build-cache \
-   --max_size=50
+   --max_size=10
