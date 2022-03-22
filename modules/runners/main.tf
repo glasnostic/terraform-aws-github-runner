@@ -35,6 +35,8 @@ locals {
   }
 
   ami_filter = coalesce(var.ami_filter, local.default_ami[var.runner_os])
+
+  enable_job_queued_check = var.enable_job_queued_check == null ? !var.enable_ephemeral_runners : var.enable_job_queued_check
 }
 
 data "aws_ami" "runner" {
@@ -55,7 +57,7 @@ resource "aws_launch_template" "runner" {
   name = "${var.environment}-action-runner"
 
   dynamic "block_device_mappings" {
-    for_each = [var.block_device_mappings]
+    for_each = var.block_device_mappings != null ? [var.block_device_mappings] : []
     content {
       device_name = lookup(block_device_mappings.value, "device_name", "/dev/xvda")
 
