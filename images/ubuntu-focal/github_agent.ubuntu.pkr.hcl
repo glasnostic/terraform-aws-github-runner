@@ -10,7 +10,7 @@ packer {
 variable "runner_version" {
   description = "The version (no v prefix) of the runner software to install https://github.com/actions/runner/releases"
   type        = string
-  default     = "2.288.1"
+  default     = "2.289.1"
 }
 
 variable "region" {
@@ -31,15 +31,21 @@ variable "subnet_id" {
   default     = null
 }
 
+variable "associate_public_ip_address" {
+   description = "If using a non-default VPC, there is no public IP address assigned to the EC2 instance. If you specified a public subnet, you probably want to set this to true. Otherwise the EC2 instance won't have access to the internet"
+   type        = string
+   default     = null
+ }
+
 variable "instance_type" {
   description = "The instance type Packer will use for the builder"
   type        = string
-  default     = "t3a.2xlarge"
+  default     = "m6a.large"
 }
 
 variable "root_volume_size_gb" {
   type    = number
-  default = 30
+  default = 100
 }
 
 variable "global_tags" {
@@ -71,6 +77,8 @@ source "amazon-ebs" "githubrunner" {
   region            = var.region
   security_group_id = var.security_group_id
   subnet_id         = var.subnet_id
+  associate_public_ip_address = var.associate_public_ip_address
+
   source_ami_filter {
     filters = {
       name                = "ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"
