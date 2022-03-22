@@ -66,6 +66,12 @@ variable "snapshot_tags" {
   default     = {}
 }
 
+variable "custom_shell_commands" {
+  description = "Additional commands to run on the EC2 instance, to customize the instance, like installing packages"
+  type        = list(string)
+  default     = []
+}
+
 source "amazon-ebs" "githubrunner" {
   ami_name          = "github-runner-ubuntu-focal-amd64-${formatdate("YYYYMMDDhhmm", timestamp())}"
   ami_virtualization_type = "hvm"
@@ -118,7 +124,7 @@ build {
     environment_vars = [
       "DEBIAN_FRONTEND=noninteractive"
     ]
-    inline = [
+    inline = concat([
       "sudo apt-get -y update",
       "sudo apt-get -y install apt-transport-https ca-certificates curl gnupg lsb-release wget git uidmap build-essential unzip jq make xz-utils",
       "sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
@@ -134,7 +140,7 @@ build {
       "sudo curl -f https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip",
       "unzip awscliv2.zip",
       "sudo ./aws/install",
-    ]
+    ], var.custom_shell_commands)
   }
 
   provisioner "file" {

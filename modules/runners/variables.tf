@@ -280,6 +280,12 @@ variable "logging_retention_in_days" {
   default     = 180
 }
 
+variable "logging_kms_key_id" {
+  description = "Specifies the kms key id to encrypt the logs with"
+  type        = string
+  default     = null
+}
+
 variable "enable_ssm_on_runners" {
   description = "Enable to allow access to the runner instances for debugging purposes via SSM. Note that this adds additional permissions to the runner instances."
   type        = bool
@@ -304,6 +310,12 @@ variable "create_service_linked_role_spot" {
   description = "(optional) create the service linked role for spot instances that is required by the scale-up lambda."
   type        = bool
   default     = false
+}
+
+variable "aws_partition" {
+  description = "(optional) partition for the base arn if not 'aws'"
+  type        = string
+  default     = "aws"
 }
 
 variable "runner_iam_role_managed_policy_arns" {
@@ -467,6 +479,12 @@ variable "enable_ephemeral_runners" {
   description = "Enable ephemeral runners, runners will only be used once."
   type        = bool
   default     = false
+}
+
+variable "enable_job_queued_check" {
+  description = "Only scale if the job event received by the scale up lambda is is in the state queued. By default enabled for non ephemeral runners and disabled for ephemeral. Set this variable to overwrite the default behavior."
+  type        = bool
+  default     = null
 }
 
 variable "pool_lambda_timeout" {
