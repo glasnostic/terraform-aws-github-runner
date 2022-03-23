@@ -40,7 +40,7 @@ variable "associate_public_ip_address" {
 variable "instance_type" {
   description = "The instance type Packer will use for the builder"
   type        = string
-  default     = "m6a.large"
+  default     = "m5.large"
 }
 
 variable "root_volume_size_gb" {
@@ -126,11 +126,12 @@ build {
     ]
     inline = concat([
       "sudo apt-get -y update",
+      "sudo apt-get -y upgrade",
       "sudo apt-get -y install apt-transport-https ca-certificates curl gnupg lsb-release wget git uidmap build-essential unzip jq make xz-utils",
       "sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg",
       "echo deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null",
       "sudo apt-get -y update",
-      "sudo apt-get -y install docker-ce docker-ce-cli containerd.io",
+      "sudo apt-get -y install docker-ce docker-ce-cli containerd.io docker-ce-rootless-extras",
       "sudo systemctl enable containerd.service",
       "sudo service docker start",
       "sudo usermod -a -G docker ubuntu",
